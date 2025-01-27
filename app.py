@@ -129,7 +129,7 @@ else:
             model=st.session_state.model.split("/")[-1],
             temperature=0.5,
             streaming=True,
-            base_url="https://api.deepseek.com"
+            base_url="https://api.deepseek.com/v1"
         )
 
 
