@@ -14,7 +14,6 @@ Usage:
 """
 
 import os
-import dotenv
 import uuid
 if os.name == 'posix':
     __import__('pysqlite3')
@@ -134,7 +133,7 @@ else:
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
-            
+
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
             full_response = ""
