@@ -41,16 +41,19 @@ st.subheader("Check information about your car with AutoBro Chatbot")
 st.sidebar.title("API Settings")
 
 # Filter selection for API provider
-api_provider = st.sidebar.selectbox("Select API Provider", ["OpenAI", "Anthropic"])
+api_provider = st.sidebar.selectbox("Select API Provider", ["OpenAI", "Anthropic", "DeepSeek"])
 
 
 openai_key = None
 anthropic_key = None
+deepseek_key = None
 MODELS = [
     # "openai/o1-mini",
     "openai/gpt-4o",
     "openai/gpt-4o-mini",
     "anthropic/claude-3-5-sonnet-20240620",
+    "deepseek/deepseek-reasoner",
+    "deepseek/deepseek-chat"
 ]
 
 # Input field for API key based on selection
@@ -58,6 +61,8 @@ if api_provider == "OpenAI":
     openai_key = st.sidebar.text_input("Enter your OpenAI Secret Key", type="password")
 elif api_provider == "Anthropic":
     anthropic_key = st.sidebar.text_input("Enter your Anthropic Key", type="password")
+elif api_provider == "DeepSeek":
+    deepseek_key = st.sidebar.text_input("Enter your DeepSeek Key", type="password")
 
 # --- Initial Setup ---
 if "session_id" not in st.session_state:
@@ -69,14 +74,15 @@ if "rag_sources" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "user", "content": "Hello"},
-        {"role": "assistant", "content": "Hi there! How can I assist you today?"}
-]
+        {"role": "assistant", "content": "Hi there! How can I assist you today?\n 你好, 有什么可以帮您？"}
+    ]
 
 # --- Main Content ---
 # Checking if the user has introduced the OpenAI API Key, if not, a warning is displayed
 missing_openai = openai_key == "" or openai_key is None or "sk-" not in openai_key
 missing_anthropic = anthropic_key == "" or anthropic_key is None
-if missing_openai and missing_anthropic and ("AZ_OPENAI_API_KEY" not in os.environ):
+missing_deepseek = deepseek_key == "" or deepseek_key is None
+if missing_openai and missing_anthropic and missing_deepseek:
     st.write("#")
     st.warning("⬅️ Please introduce an API Key to continue...")
 else:
@@ -88,7 +94,7 @@ else:
                 models.append(model)
             elif "anthropic" in model and not missing_anthropic:
                 models.append(model)
-            elif "azure-openai" in model:
+            elif "deepseek" in model and not missing_deepseek:
                 models.append(model)
         st.selectbox(
             "🤖 Select a Model", 
@@ -116,6 +122,14 @@ else:
             model=st.session_state.model.split("/")[-1],
             temperature=0.3,
             streaming=True,
+        )
+    elif model_provider == "deepseek":
+        llm_stream = ChatOpenAI(
+            api_key=anthropic_key,
+            model=st.session_state.model.split("/")[-1],
+            temperature=0.5,
+            streaming=True,
+            base_url="https://api.deepseek.com"
         )
 
 
