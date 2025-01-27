@@ -125,7 +125,7 @@ else:
         )
     elif model_provider == "deepseek":
         llm_stream = ChatOpenAI(
-            api_key=anthropic_key,
+            api_key=deepseek_key,
             model=st.session_state.model.split("/")[-1],
             temperature=0.5,
             streaming=True,
