@@ -51,7 +51,7 @@ MODELS = [
     # "openai/o1-mini",
     "openai/gpt-4o",
     "openai/gpt-4o-mini",
-    "openai/o1",
+    "openai/o1-2024-12-17",
     "openai/o1-mini",
     "anthropic/claude-3-5-sonnet-20240620",
     "deepseek/deepseek-reasoner",
