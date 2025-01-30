@@ -51,7 +51,7 @@ MODELS = [
     # "openai/o1-mini",
     "openai/gpt-4o",
     "openai/gpt-4o-mini",
-    "openai/o1-2024-12-17",
+    "openai/o1-preview",
     "openai/o1-mini",
     "anthropic/claude-3-5-sonnet-20240620",
     "deepseek/deepseek-reasoner",
@@ -115,7 +115,7 @@ else:
         llm_stream = ChatOpenAI(
             api_key=openai_key,
             model_name=st.session_state.model.split("/")[-1],
-            temperature=0.3,
+            temperature=1,
             streaming=True,
         )
     elif model_provider == "anthropic":
