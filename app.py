@@ -50,26 +50,25 @@ st.subheader(" Api access is the real access! ")
 # Sidebar for API settings
 st.sidebar.title("Model API Setup")
 
-user_password = st.sidebar.text_input("Enter your password", type="password")
+user_password = st.sidebar.text_input("Enter your password 请输入密码", type="password")
 user_password_hash = hashlib.sha256(user_password.encode()).hexdigest()
 
 if user_password_hash == stored_password_hash:
     # Filter selection for API provider
-    api_provider = st.sidebar.selectbox("Select API Provider", ["OpenAI", "Anthropic", "DeepSeek"])
+    api_provider = st.sidebar.selectbox("Select API Provider", ["", "OpenAI", "Anthropic", "DeepSeek"])
 
     openai_key = os.getenv("OPENAI_API_KEY")
-    anthropic_key = None
+    anthropic_key = os.getenv("ANTHROPIC_API_KEY")
     deepseek_key = os.getenv("DEEPSEEK_KEY")
-    MODELS = [
-        # "openai/o1-mini",
-        "openai/gpt-4o",
-        "openai/gpt-4o-mini",
-        "openai/o1-preview",
-        "openai/o1-mini",
-        "anthropic/claude-3-5-sonnet-20240620",
-        "deepseek/deepseek-reasoner",
-        "deepseek/deepseek-chat"
-    ]
+    MODELS = {
+        "GPT4o": "openai/gpt-4o",
+        "GPT4omini": "openai/gpt-4o-mini",
+        "o1-preview": "openai/o1-preview",
+        "o1mini": "openai/o1-mini",
+        "Claude3.5 Sonnet": "anthropic/claude-3-5-sonnet-20240620",
+        "DeepSeek R1": "deepseek/deepseek-reasoner",
+        "DeepSeek V3": "deepseek/deepseek-chat"
+    }
 
     # --- Initial Setup ---
     if "session_id" not in st.session_state:
@@ -77,12 +76,6 @@ if user_password_hash == stored_password_hash:
 
     if "rag_sources" not in st.session_state:
         st.session_state.rag_sources = []
-
-    if "messages" not in st.session_state:
-        st.session_state.messages = [
-            {"role": "user", "content": "Hello"},
-            {"role": "assistant", "content": "Hi there! How can I assist you today?\n 你好, 有什么可以帮您？"}
-        ]
 
     # --- Main Content ---
     # Checking if the user has introduced the OpenAI API Key, if not, a warning is displayed
@@ -92,19 +85,19 @@ if user_password_hash == stored_password_hash:
     if missing_openai and missing_anthropic and missing_deepseek:
         st.write("#")
         st.warning("⬅️ Please introduce an API Key to continue...")
-    else:
+    elif api_provider:
         with st.sidebar:
             st.divider()
             models = []
-            for model in MODELS:
-                if "openai" in model and not missing_openai:
-                    models.append(model)
-                elif "anthropic" in model and not missing_anthropic:
-                    models.append(model)
-                elif "deepseek" in model and not missing_deepseek:
-                    models.append(model)
+            for model_name, address in MODELS.items():
+                if "openai" in address and api_provider == "OpenAI":
+                    models.append(model_name)
+                elif "anthropic" in address and api_provider == "Anthropic":
+                    models.append(model_name)
+                elif "deepseek" in address and api_provider == "DeepSeek":
+                    models.append(model_name)
             st.selectbox(
-                "🤖 Select a Model", 
+                "🤖 Select a Model",
                 options=models,
                 key="model",
             )
@@ -112,40 +105,36 @@ if user_password_hash == stored_password_hash:
             with cols0[1]:
                 st.button("Clear Chat", on_click=lambda: st.session_state.messages.clear(), type="primary")
 
-
         # Main chat app
-        model_provider = st.session_state.model.split("/")[0]
+        model_provider = MODELS[st.session_state.model].split("/")[0]
         if model_provider == "openai":
             llm_stream = ChatOpenAI(
                 api_key=openai_key,
-                model_name=st.session_state.model.split("/")[-1],
+                model_name=MODELS[st.session_state.model].split("/")[-1],
                 temperature=1,
                 streaming=True,
             )
         elif model_provider == "anthropic":
             llm_stream = ChatAnthropic(
                 api_key=anthropic_key,
-                model=st.session_state.model.split("/")[-1],
+                model=MODELS[st.session_state.model].split("/")[-1],
                 temperature=0.3,
                 streaming=True,
             )
         elif model_provider == "deepseek":
             llm_stream = ChatOpenAI(
                 api_key=deepseek_key,
-                model=st.session_state.model.split("/")[-1],
+                model=MODELS[st.session_state.model].split("/")[-1],
                 temperature=0.5,
                 streaming=True,
                 base_url="https://api.deepseek.com/v1"
             )
 
-
         for message in st.session_state.messages:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
 
-
-
-        if prompt := st.chat_input("Anything you like to check about your car?"):
+        if prompt := st.chat_input("Anything you like to check?"):
             st.session_state.messages.append({"role": "user", "content": prompt})
             with st.chat_message("user"):
                 st.markdown(prompt)
@@ -159,4 +148,3 @@ if user_password_hash == stored_password_hash:
                 st.write_stream(llm.stream_llm_response(llm_stream, messages))
 else:
     st.warning("⬅️ Please input correct password to continue...")
-
