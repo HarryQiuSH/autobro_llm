@@ -10,5 +10,5 @@ This project implements a Retrieval-Augmented Generation (RAG) bot using:
 - Generate responses with a language model.
 - Preset Made to answer car related questions
 
-You can email q.shihao@wustl.edu to get temporal key.
+You can email [q.shihao@wustl.edu](mailto:q.shihao@wustl.edu) to get temporal key.
 [Demo link](https://autobro.streamlit.app)
