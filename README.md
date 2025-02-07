@@ -2,7 +2,7 @@
 
 This project implements a Retrieval-Augmented Generation (RAG) bot using:
 - **Streamlit** for the user interface.
-- **MongoDB** for vector storage.
+- **Pinecone** for vector storage. (in progress)
 - **LangChain** for LLM interaction.
 
 ## Features
@@ -10,8 +10,4 @@ This project implements a Retrieval-Augmented Generation (RAG) bot using:
 - Generate responses with a language model.
 - Preset Made to answer car related questions
 
-## Installation
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/HarryQiuSH/hq_items.git
-   cd hq._items
+[Demo link](https://autobro.streamlit.app)
