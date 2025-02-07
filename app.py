@@ -77,6 +77,8 @@ if user_password_hash == stored_password_hash:
     if "rag_sources" not in st.session_state:
         st.session_state.rag_sources = []
 
+    if "messages" not in st.session_state:
+        st.session_state.messages = [{"role": "user", "content": "Let's go!"}]
     # --- Main Content ---
     # Checking if the user has introduced the OpenAI API Key, if not, a warning is displayed
     missing_openai = openai_key == "" or openai_key is None or "sk-" not in openai_key
