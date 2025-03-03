@@ -18,7 +18,6 @@ import getpass
 import hashlib
 from dotenv import load_dotenv
 import uuid
-from googleapiclient.discovery import build
 
 import streamlit as st
 import llm_tools as llm
