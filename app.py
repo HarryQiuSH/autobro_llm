@@ -18,7 +18,7 @@ import getpass
 import hashlib
 from dotenv import load_dotenv
 import uuid
-
+from googleapiclient.discovery import build
 
 import streamlit as st
 import llm_tools as llm
@@ -33,6 +33,8 @@ load_dotenv()
 # Retrieve the API key and password hash from .env
 api_key = os.getenv("API_KEY")
 stored_password_hash = os.getenv("PASSWORD")
+DRIVE_API_KEY = os.getenv("GOOGLE")
+DRIVE_FOLDER_ID = "1Mm8vIu0Wflpm6oILFIyM_YsZ02l4d-yn"
 
 
 st.set_page_config(
@@ -65,7 +67,9 @@ if user_password_hash == stored_password_hash:
         "GPT4omini": "openai/gpt-4o-mini",
         "o1-preview": "openai/o1-preview",
         "o1mini": "openai/o1-mini",
-        "Claude3.5 Sonnet": "anthropic/claude-3-5-sonnet-20240620",
+        "Claude3.5 Sonnet": "anthropic/claude-3-5-sonnet-20241022",
+        "Claude3.7 Sonnet": "anthropic/claude-3-7-sonnet-20250219",
+        "Claude3.5 Haiku": "anthropic/claude-3-5-haiku-20241022",
         "DeepSeek R1": "deepseek/deepseek-reasoner",
         "DeepSeek V3": "deepseek/deepseek-chat"
     }
@@ -110,17 +114,19 @@ if user_password_hash == stored_password_hash:
         # Main chat app
         model_provider = MODELS[st.session_state.model].split("/")[0]
         if model_provider == "openai":
+            temperature_value = 1 if model_name.startswith("o1") else 0.5
+            model_name = MODELS[st.session_state.model].split("/")[-1]
             llm_stream = ChatOpenAI(
                 api_key=openai_key,
-                model_name=MODELS[st.session_state.model].split("/")[-1],
-                temperature=1,
+                model_name=model_name,
+                temperature=temperature_value,
                 streaming=True,
             )
         elif model_provider == "anthropic":
             llm_stream = ChatAnthropic(
                 api_key=anthropic_key,
                 model=MODELS[st.session_state.model].split("/")[-1],
-                temperature=0.3,
+                temperature=0.5,
                 streaming=True,
             )
         elif model_provider == "deepseek":
@@ -145,7 +151,12 @@ if user_password_hash == stored_password_hash:
                 message_placeholder = st.empty()
                 full_response = ""
 
-                messages = [HumanMessage(content=m["content"]) if m["role"] == "user" else AIMessage(content=m["content"]) for m in st.session_state.messages]
+                messages = [
+                    HumanMessage(content=m["content"])
+                    if m["role"] == "user"
+                    else AIMessage(content=m["content"])
+                    for m in st.session_state.messages
+                ]
 
                 st.write_stream(llm.stream_llm_response(llm_stream, messages))
 else:

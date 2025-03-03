@@ -12,3 +12,5 @@ This project implements a Retrieval-Augmented Generation (RAG) bot using:
 
 You can email [q.shihao@wustl.edu](mailto:q.shihao@wustl.edu) to get temporal key.
 [Demo link](https://autobro.streamlit.app)
+
+Code partially followed tutorial from this (link)[]
