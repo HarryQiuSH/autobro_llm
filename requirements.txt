@@ -7,4 +7,4 @@ langchain-core==0.3.1
 langchain-openai==0.2.0
 langchain-text-splitters==0.3.0
 langsmith==0.1.123
-pydantic==1.10.9
+pydantic==2.7.4
