@@ -43,10 +43,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-st.html("""<h4 style="text-align: center;">🔍 <i> Api is the real access! </i> </h4>""")
+st.html("""<h4 style="text-align: center;">🔍 <i> API access gets you fair answer among LLM providers! </i> </h4>""")
 
-st.title("Universal LLM hub")
-st.subheader(" Api access is the real access! ")
+st.title("HQ Agentic Helper")
+st.subheader("Api access is the real access! ")
 
 # Sidebar for API settings
 st.sidebar.title("Model API Setup")
