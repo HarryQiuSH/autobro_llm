@@ -63,9 +63,10 @@ if user_password_hash == stored_password_hash:
     deepseek_key = os.getenv("DEEPSEEK_KEY")
     MODELS = {
         "GPT4o": "openai/gpt-4o",
+        "GPT4.1": "openai/gpt-4.1",
         "GPT4omini": "openai/gpt-4o-mini",
-        "o1-preview": "openai/o1-preview",
-        "o1mini": "openai/o1-mini",
+        "o1": "openai/o1",
+        "o3": "openai/o3",
         "Claude3.5 Sonnet": "anthropic/claude-3-5-sonnet-20241022",
         "Claude3.7 Sonnet": "anthropic/claude-3-7-sonnet-20250219",
         "Claude3.5 Haiku": "anthropic/claude-3-5-haiku-20241022",
@@ -113,7 +114,7 @@ if user_password_hash == stored_password_hash:
         # Main chat app
         model_provider = MODELS[st.session_state.model].split("/")[0]
         if model_provider == "openai":
-            temperature_value = 1 if model_name.startswith("o1") else 0.5
+            temperature_value = 1 if model_name.startswith("o") else 0.5
             model_name = MODELS[st.session_state.model].split("/")[-1]
             llm_stream = ChatOpenAI(
                 api_key=openai_key,
