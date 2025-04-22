@@ -114,8 +114,8 @@ if user_password_hash == stored_password_hash:
         # Main chat app
         model_provider = MODELS[st.session_state.model].split("/")[0]
         if model_provider == "openai":
-            temperature_value = 1 if model_name.startswith("o") else 0.5
             model_name = MODELS[st.session_state.model].split("/")[-1]
+            temperature_value = 1 if model_name.startswith("o") else 0.5
             llm_stream = ChatOpenAI(
                 api_key=openai_key,
                 model_name=model_name,
