@@ -67,6 +67,7 @@ if user_password_hash == stored_password_hash:
         "GPT4omini": "openai/gpt-4o-mini",
         "o1": "openai/o1",
         "o3": "openai/o3",
+        "Claude4 Sonnet": "anthropic/claude-4-sonnet-20250514",
         "Claude3.5 Sonnet": "anthropic/claude-3-5-sonnet-20241022",
         "Claude3.7 Sonnet": "anthropic/claude-3-7-sonnet-20250219",
         "Claude3.5 Haiku": "anthropic/claude-3-5-haiku-20241022",
