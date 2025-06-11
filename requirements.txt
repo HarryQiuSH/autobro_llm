@@ -17,3 +17,4 @@ google-auth-oauthlib==1.1.0
 chromadb==0.4.15
 python-dotenv==1.0.0
 ruff==0.1.9
+huggingface-hub==0.32.6
