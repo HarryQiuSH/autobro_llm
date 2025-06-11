@@ -1,6 +1,35 @@
 # Ruff configuration file for version 0.1.9
-# Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default.
-select = ["E", "F", "W", "I"]
+# Enable comprehensive linting rules
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "I",   # isort (import sorting)
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "YTT", # flake8-2020
+    "S",   # flake8-bandit (security)
+    "BLE", # flake8-blind-except
+    "B",   # flake8-bugbear
+    "A",   # flake8-builtins
+    "C4",  # flake8-comprehensions
+    "T20", # flake8-print
+    "SIM", # flake8-simplify
+    "TID", # flake8-tidy-imports
+    "Q",   # flake8-quotes
+    "RSE", # flake8-raise
+    "RET", # flake8-return
+    "TCH", # flake8-type-checking
+]
+
+# Ignore specific rules that might be too strict for this project
+ignore = [
+    "S101",  # Use of assert
+    "T201",  # Print found (allow print statements)
+    "B008",  # Do not perform function calls in argument defaults
+    "S603",  # subprocess call: check for execution of untrusted input
+    "S607",  # Starting a process with a partial executable path
+]
 
 # Allow autofix for all enabled rules (when `--fix`) is provided.
 fixable = ["ALL"]
@@ -30,10 +59,17 @@ exclude = [
     "node_modules",
     "venv",
     "chroma_db",
+    "*.ipynb",  # Exclude Jupyter notebooks
 ]
 
-# Same as Black.
-line-length = 88
+# Align with pyproject.toml settings
+line-length = 100
+target-version = "py311"
 
-# Assume Python 3.8+
-target-version = "py38"
+[flake8-quotes]
+docstring-quotes = "double"
+inline-quotes = "double"
+
+[isort]
+known-first-party = ["document_processor", "rag_engine", "llm_tools"]
+split-on-trailing-comma = true
