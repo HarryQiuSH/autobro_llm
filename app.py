@@ -13,23 +13,21 @@ Usage:
     Run the script using Streamlit to start the chatbot application.
 """
 
-import os
-import getpass
 import hashlib
-from dotenv import load_dotenv
+import os
 import uuid
 
 import streamlit as st
+from dotenv import load_dotenv
+from langchain.schema import AIMessage, HumanMessage
+from langchain_anthropic import ChatAnthropic
+from langchain_openai import ChatOpenAI
+
 import llm_tools as llm
 
-from langchain_openai import ChatOpenAI
-from langchain_anthropic import ChatAnthropic
-from langchain.schema import HumanMessage, AIMessage
-
 # RAG imports
-from document_processor import DocumentProcessor, GoogleDriveProcessor
-from rag_engine import RAGEngine, RAGChatManager
-
+from document_processor import DocumentProcessor
+from rag_engine import RAGChatManager, RAGEngine
 
 # Load environment variables
 load_dotenv()
@@ -84,34 +82,37 @@ if user_password_hash == stored_password_hash:
     }
 
     # --- Initial Setup ---
-    if "session_id" not in st.session_state:
-        st.session_state.session_id = str(uuid.uuid4())
-
-    if "rag_sources" not in st.session_state:
-        st.session_state.rag_sources = []
-
-    if "messages" not in st.session_state:
-        st.session_state.messages = [{"role": "user", "content": "Let's go!"}]
-    
-    # RAG Setup
-    if "rag_engine" not in st.session_state:
-        embedding_type = "openai" if openai_key and "sk-" in openai_key else "local"
-        st.session_state.rag_engine = RAGEngine(
-            embedding_type=embedding_type,
-            openai_api_key=openai_key if embedding_type == "openai" else None
-        )
-    
-    if "rag_chat_manager" not in st.session_state:
-        st.session_state.rag_chat_manager = RAGChatManager(st.session_state.rag_engine)
-    
-    if "document_processor" not in st.session_state:
-        st.session_state.document_processor = DocumentProcessor()
-    
-    if "uploaded_documents" not in st.session_state:
-        st.session_state.uploaded_documents = []
-    
-    if "rag_mode" not in st.session_state:
-        st.session_state.rag_mode = False
+    if (
+        "session_id" not in st.session_state
+        or "rag_sources" not in st.session_state
+        or "messages" not in st.session_state
+        or "rag_engine" not in st.session_state
+        or "rag_chat_manager" not in st.session_state
+        or "document_processor" not in st.session_state
+        or "uploaded_documents" not in st.session_state
+        or "rag_mode" not in st.session_state
+    ):
+        if "session_id" not in st.session_state:
+            st.session_state.session_id = str(uuid.uuid4())
+        if "rag_sources" not in st.session_state:
+            st.session_state.rag_sources = []
+        if "messages" not in st.session_state:
+            st.session_state.messages = [{"role": "user", "content": "Let's go!"}]
+        # RAG Setup
+        if "rag_engine" not in st.session_state:
+            embedding_type = "openai" if openai_key and "sk-" in openai_key else "local"
+            st.session_state.rag_engine = RAGEngine(
+                embedding_type=embedding_type,
+                openai_api_key=openai_key if embedding_type == "openai" else None,
+            )
+        if "rag_chat_manager" not in st.session_state:
+            st.session_state.rag_chat_manager = RAGChatManager(st.session_state.rag_engine)
+        if "document_processor" not in st.session_state:
+            st.session_state.document_processor = DocumentProcessor()
+        if "uploaded_documents" not in st.session_state:
+            st.session_state.uploaded_documents = []
+        if "rag_mode" not in st.session_state:
+            st.session_state.rag_mode = False
     # --- Main Content ---
     # Checking if the user has introduced the OpenAI API Key, if not, a warning is displayed
     missing_openai = openai_key == "" or openai_key is None or "sk-" not in openai_key
@@ -120,16 +121,14 @@ if user_password_hash == stored_password_hash:
     if missing_openai and missing_anthropic and missing_deepseek:
         st.write("#")
         st.warning("⬅️ Please introduce an API Key to continue...")
-    elif api_provider:
+    if api_provider:
         with st.sidebar:
             st.divider()
             models = []
             for model_name, address in MODELS.items():
-                if "openai" in address and api_provider == "OpenAI":
-                    models.append(model_name)
-                elif "anthropic" in address and api_provider == "Anthropic":
-                    models.append(model_name)
-                elif "deepseek" in address and api_provider == "DeepSeek":
+                if ("openai" in address and api_provider == "OpenAI") or \
+                ("anthropic" in address and api_provider == "Anthropic") or \
+                ("deepseek" in address and api_provider == "DeepSeek"):
                     models.append(model_name)
             st.selectbox(
                 "🤖 Select a Model",
@@ -143,54 +142,62 @@ if user_password_hash == stored_password_hash:
                     on_click=lambda: st.session_state.messages.clear(),
                     type="primary",
                 )
-            
+
             # RAG Section
             st.divider()
             st.subheader("📚 RAG Documents")
-            
+
             # RAG Mode Toggle
             st.session_state.rag_mode = st.checkbox(
-                "Enable RAG Mode", 
+                "Enable RAG Mode",
                 value=st.session_state.rag_mode,
-                help="Use uploaded documents to enhance responses"
+                help="Use uploaded documents to enhance responses",
             )
-            
+
             # File Upload
             uploaded_files = st.file_uploader(
                 "Upload Documents",
                 type=["pdf", "docx", "txt"],
                 accept_multiple_files=True,
-                help="Upload PDF, DOCX, or TXT files for RAG"
+                help="Upload PDF, DOCX, or TXT files for RAG",
             )
-            
+
             # Process uploaded files
             if uploaded_files:
                 for uploaded_file in uploaded_files:
-                    if uploaded_file.name not in [doc["filename"] for doc in st.session_state.uploaded_documents]:
+                    if uploaded_file.name not in [
+                        doc["filename"] for doc in st.session_state.uploaded_documents
+                    ]:
                         with st.spinner(f"Processing {uploaded_file.name}..."):
-                            processed_doc = st.session_state.document_processor.process_uploaded_file(uploaded_file)
+                            processed_doc = (
+                                st.session_state.document_processor.process_uploaded_file(
+                                    uploaded_file
+                                )
+                            )
                             if processed_doc:
                                 st.session_state.uploaded_documents.append(processed_doc)
-                                
+
                                 # Add to vector store
-                                chunked_docs = st.session_state.document_processor.chunk_documents([processed_doc])
+                                chunked_docs = st.session_state.document_processor.chunk_documents(
+                                    [processed_doc]
+                                )
                                 st.session_state.rag_engine.add_documents(chunked_docs)
-                                
+
                                 st.success(f"✅ {uploaded_file.name} processed successfully!")
-            
+
             # Display uploaded documents
             if st.session_state.uploaded_documents:
                 st.write("**Uploaded Documents:**")
                 for doc in st.session_state.uploaded_documents:
                     st.write(f"• {doc['filename']} ({doc['file_type'].upper()})")
-                
+
                 # Clear documents button
                 if st.button("Clear All Documents", type="secondary"):
                     st.session_state.uploaded_documents = []
                     st.session_state.rag_engine.clear_vector_store()
                     st.success("All documents cleared!")
                     st.rerun()
-            
+
             # Vector store info
             vector_info = st.session_state.rag_engine.get_vector_store_info()
             if vector_info["count"] > 0:
@@ -239,19 +246,23 @@ if user_password_hash == stored_password_hash:
                     rag_result = st.session_state.rag_chat_manager.process_rag_query(
                         prompt, st.session_state.messages
                     )
-                    
+
                     # Use augmented prompt for LLM
-                    final_prompt = rag_result['augmented_prompt']
-                    context_docs = rag_result['context_docs']
-                    
+                    final_prompt = rag_result["augmented_prompt"]
+                    context_docs = rag_result["context_docs"]
+
                     # Show retrieved context in an expander
                     if context_docs:
                         with st.expander("📄 Retrieved Context", expanded=False):
                             for i, doc in enumerate(context_docs):
                                 st.write(f"**Source {i+1}: {doc['source']}**")
-                                st.write(doc['content'][:300] + "..." if len(doc['content']) > 300 else doc['content'])
+                                st.write(
+                                    doc["content"][:300] + "..."
+                                    if len(doc["content"]) > 300
+                                    else doc["content"]
+                                )
                                 st.divider()
-                    
+
                     # Create messages with RAG context
                     messages = [
                         HumanMessage(content=m["content"])
@@ -261,7 +272,7 @@ if user_password_hash == stored_password_hash:
                     ]
                     # Add the augmented prompt as the final message
                     messages.append(HumanMessage(content=final_prompt))
-                    
+
                 else:
                     # Regular chat without RAG
                     messages = [
@@ -275,14 +286,19 @@ if user_password_hash == stored_password_hash:
                 # Stream the response
                 response_generator = llm.stream_llm_response(llm_stream, messages)
                 response = st.write_stream(response_generator)
-                
+
                 # Add sources to response if RAG was used
                 if st.session_state.rag_mode and context_docs:
-                    final_response = st.session_state.rag_chat_manager.format_rag_response_with_sources(
-                        response, context_docs
+                    final_response = (
+                        st.session_state.rag_chat_manager.format_rag_response_with_sources(
+                            response, context_docs
+                        )
                     )
                     # Update the last message with sources
-                    if st.session_state.messages and st.session_state.messages[-1]["role"] == "assistant":
+                    if (
+                        st.session_state.messages
+                        and st.session_state.messages[-1]["role"] == "assistant"
+                    ):
                         st.session_state.messages[-1]["content"] = final_response
 else:
     st.warning("⬅️ Please input correct password to continue...")

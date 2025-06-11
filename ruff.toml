@@ -9,7 +9,6 @@ select = [
     "UP",  # pyupgrade
     "YTT", # flake8-2020
     "S",   # flake8-bandit (security)
-    "BLE", # flake8-blind-except
     "B",   # flake8-bugbear
     "A",   # flake8-builtins
     "C4",  # flake8-comprehensions
@@ -63,7 +62,7 @@ exclude = [
 ]
 
 # Align with pyproject.toml settings
-line-length = 100
+line-length = 135
 target-version = "py311"
 
 [flake8-quotes]

@@ -7,22 +7,19 @@ for various file formats including PDF, DOCX, and TXT files.
 Author: Harry Qiu
 """
 
-import os
-import tempfile
-from typing import List, Dict, Any
-import streamlit as st
 from io import BytesIO
+from typing import Any
 
 # Document processing imports
 import PyPDF2
+import streamlit as st
 from docx import Document
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.schema import Document as LangchainDocument
 
 # Google Drive imports
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
-from google.oauth2 import service_account
+from langchain.schema import Document as LangchainDocument
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 
 class DocumentProcessor:
@@ -71,7 +68,7 @@ class DocumentProcessor:
                 st.error(f"Error processing TXT {filename}: {str(e)}")
                 return ""
 
-    def process_uploaded_file(self, uploaded_file) -> Dict[str, Any]:
+    def process_uploaded_file(self, uploaded_file) -> dict[str, Any]:
         """Process an uploaded file and extract text."""
         file_content = uploaded_file.read()
         filename = uploaded_file.name
@@ -99,9 +96,7 @@ class DocumentProcessor:
             "size": len(file_content),
         }
 
-    def chunk_documents(
-        self, documents: List[Dict[str, Any]]
-    ) -> List[LangchainDocument]:
+    def chunk_documents(self, documents: list[dict[str, Any]]) -> list[LangchainDocument]:
         """Split documents into chunks for vector storage."""
         chunked_docs = []
 
@@ -124,7 +119,7 @@ class DocumentProcessor:
 
         return chunked_docs
 
-    def display_document_info(self, documents: List[Dict[str, Any]]):
+    def display_document_info(self, documents: list[dict[str, Any]]):
         """Display information about processed documents."""
         if not documents:
             st.info("No documents uploaded yet.")
@@ -134,11 +129,9 @@ class DocumentProcessor:
         for doc in documents:
             with st.expander(f"{doc['filename']} ({doc['file_type'].upper()})"):
                 st.write(f"**Size:** {doc['size']:,} bytes")
-                st.write(f"**Content Preview:**")
+                st.write("**Content Preview:**")
                 preview = (
-                    doc["content"][:500] + "..."
-                    if len(doc["content"]) > 500
-                    else doc["content"]
+                    doc["content"][:500] + "..." if len(doc["content"]) > 500 else doc["content"]
                 )
                 st.text(preview)
 
@@ -159,7 +152,7 @@ class GoogleDriveProcessor:
         except Exception as e:
             st.error(f"Failed to initialize Google Drive service: {str(e)}")
 
-    def list_files_in_folder(self) -> List[Dict[str, str]]:
+    def list_files_in_folder(self) -> list[dict[str, str]]:
         """List files in the specified Google Drive folder."""
         if not self.service:
             return []
@@ -181,11 +174,7 @@ class GoogleDriveProcessor:
                 "text/plain",
             ]
 
-            filtered_files = [
-                file for file in files if file.get("mimeType") in supported_types
-            ]
-
-            return filtered_files
+            return [file for file in files if file.get("mimeType") in supported_types]
 
         except Exception as e:
             st.error(f"Error listing Google Drive files: {str(e)}")
