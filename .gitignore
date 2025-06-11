@@ -14,6 +14,3 @@ __pycache__/
 
 # Logs
 *.log
-
-# vector enbedding
-chroma_db
