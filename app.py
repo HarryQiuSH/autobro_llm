@@ -45,9 +45,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-st.html(
-    """<h4 style="text-align: center;">🔍 <i> API access gets you fair answer among LLM providers! </i> </h4>"""
-)
+st.html("""<h4 style="text-align: center;">🔍 <i> API access gets you fair answer among LLM providers! </i> </h4>""")
 
 st.title("HQ Agentic Helper")
 st.subheader("Api access is the real access! ")
@@ -60,9 +58,7 @@ user_password_hash = hashlib.sha256(user_password.encode()).hexdigest()
 
 if user_password_hash == stored_password_hash:
     # Filter selection for API provider
-    api_provider = st.sidebar.selectbox(
-        "Select API Provider", ["", "OpenAI", "Anthropic", "DeepSeek"]
-    )
+    api_provider = st.sidebar.selectbox("Select API Provider", ["", "OpenAI", "Anthropic", "DeepSeek"])
 
     openai_key = os.getenv("OPENAI_API_KEY")
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
@@ -73,6 +69,7 @@ if user_password_hash == stored_password_hash:
         "GPT4omini": "openai/gpt-4o-mini",
         "o1": "openai/o1",
         "o3": "openai/o3",
+        "Claude4 Opus": "anthropic/claude-opus-4-20250514",
         "Claude4 Sonnet": "anthropic/claude-4-sonnet-20250514",
         "Claude3.5 Sonnet": "anthropic/claude-3-5-sonnet-20241022",
         "Claude3.7 Sonnet": "anthropic/claude-3-7-sonnet-20250219",
@@ -126,9 +123,11 @@ if user_password_hash == stored_password_hash:
             st.divider()
             models = []
             for model_name, address in MODELS.items():
-                if ("openai" in address and api_provider == "OpenAI") or \
-                ("anthropic" in address and api_provider == "Anthropic") or \
-                ("deepseek" in address and api_provider == "DeepSeek"):
+                if (
+                    ("openai" in address and api_provider == "OpenAI")
+                    or ("anthropic" in address and api_provider == "Anthropic")
+                    or ("deepseek" in address and api_provider == "DeepSeek")
+                ):
                     models.append(model_name)
             st.selectbox(
                 "🤖 Select a Model",
@@ -165,22 +164,14 @@ if user_password_hash == stored_password_hash:
             # Process uploaded files
             if uploaded_files:
                 for uploaded_file in uploaded_files:
-                    if uploaded_file.name not in [
-                        doc["filename"] for doc in st.session_state.uploaded_documents
-                    ]:
+                    if uploaded_file.name not in [doc["filename"] for doc in st.session_state.uploaded_documents]:
                         with st.spinner(f"Processing {uploaded_file.name}..."):
-                            processed_doc = (
-                                st.session_state.document_processor.process_uploaded_file(
-                                    uploaded_file
-                                )
-                            )
+                            processed_doc = st.session_state.document_processor.process_uploaded_file(uploaded_file)
                             if processed_doc:
                                 st.session_state.uploaded_documents.append(processed_doc)
 
                                 # Add to vector store
-                                chunked_docs = st.session_state.document_processor.chunk_documents(
-                                    [processed_doc]
-                                )
+                                chunked_docs = st.session_state.document_processor.chunk_documents([processed_doc])
                                 st.session_state.rag_engine.add_documents(chunked_docs)
 
                                 st.success(f"✅ {uploaded_file.name} processed successfully!")
@@ -243,9 +234,7 @@ if user_password_hash == stored_password_hash:
                 # Check if RAG mode is enabled and we have documents
                 if st.session_state.rag_mode and st.session_state.uploaded_documents:
                     # Process with RAG
-                    rag_result = st.session_state.rag_chat_manager.process_rag_query(
-                        prompt, st.session_state.messages
-                    )
+                    rag_result = st.session_state.rag_chat_manager.process_rag_query(prompt, st.session_state.messages)
 
                     # Use augmented prompt for LLM
                     final_prompt = rag_result["augmented_prompt"]
@@ -255,19 +244,13 @@ if user_password_hash == stored_password_hash:
                     if context_docs:
                         with st.expander("📄 Retrieved Context", expanded=False):
                             for i, doc in enumerate(context_docs):
-                                st.write(f"**Source {i+1}: {doc['source']}**")
-                                st.write(
-                                    doc["content"][:300] + "..."
-                                    if len(doc["content"]) > 300
-                                    else doc["content"]
-                                )
+                                st.write(f"**Source {i + 1}: {doc['source']}**")
+                                st.write(doc["content"][:300] + "..." if len(doc["content"]) > 300 else doc["content"])
                                 st.divider()
 
                     # Create messages with RAG context
                     messages = [
-                        HumanMessage(content=m["content"])
-                        if m["role"] == "user"
-                        else AIMessage(content=m["content"])
+                        HumanMessage(content=m["content"]) if m["role"] == "user" else AIMessage(content=m["content"])
                         for m in st.session_state.messages[:-1]  # Exclude the last user message
                     ]
                     # Add the augmented prompt as the final message
@@ -276,9 +259,7 @@ if user_password_hash == stored_password_hash:
                 else:
                     # Regular chat without RAG
                     messages = [
-                        HumanMessage(content=m["content"])
-                        if m["role"] == "user"
-                        else AIMessage(content=m["content"])
+                        HumanMessage(content=m["content"]) if m["role"] == "user" else AIMessage(content=m["content"])
                         for m in st.session_state.messages
                     ]
                     context_docs = []
@@ -289,16 +270,12 @@ if user_password_hash == stored_password_hash:
 
                 # Add sources to response if RAG was used
                 if st.session_state.rag_mode and context_docs:
-                    final_response = (
-                        st.session_state.rag_chat_manager.format_rag_response_with_sources(
-                            response, context_docs
-                        )
+                    final_response = st.session_state.rag_chat_manager.format_rag_response_with_sources(
+                        response,
+                        context_docs,
                     )
                     # Update the last message with sources
-                    if (
-                        st.session_state.messages
-                        and st.session_state.messages[-1]["role"] == "assistant"
-                    ):
+                    if st.session_state.messages and st.session_state.messages[-1]["role"] == "assistant":
                         st.session_state.messages[-1]["content"] = final_response
 else:
     st.warning("⬅️ Please input correct password to continue...")
