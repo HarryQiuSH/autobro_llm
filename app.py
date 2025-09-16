@@ -13,15 +13,18 @@ Usage:
     Run the script using Streamlit to start the chatbot application.
 """
 
+import base64
 import hashlib
 import os
 import uuid
 
+import requests
 import streamlit as st
 from dotenv import load_dotenv
 from langchain.schema import AIMessage, HumanMessage
 from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI
+from openai import OpenAI
 
 import llm_tools as llm
 
@@ -32,6 +35,59 @@ from rag_engine import RAGChatManager, RAGEngine
 # Load environment variables
 load_dotenv()
 # Retrieve the API key and password hash from .env
+
+
+def generate_image_bytes(openai_api_key: str, prompt: str, size: str = "1024x1024", n: int = 1):
+    """
+    Generate images via OpenAI Images API (gpt-image-1).
+    Returns a list of bytes objects (PNG).
+
+    This function is robust to different SDK response shapes: dicts or objects
+    where fields may be attributes (e.g., b64_json, b64, url) or dict keys.
+    """
+    if not openai_api_key or "sk-" not in openai_api_key:
+        raise ValueError("OPENAI_API_KEY missing or invalid")
+
+    client = OpenAI(api_key=openai_api_key)
+    resp = client.images.generate(model="gpt-image-1", prompt=prompt, size=size, n=n)
+
+    # Normalize data list whether resp is dict-like or object-like
+    if isinstance(resp, dict):
+        data_list = resp.get("data", []) or []
+    else:
+        data_list = getattr(resp, "data", []) or []
+
+    images = []
+    for item in data_list:
+        # helper to safely get value from dict or object
+        def _get(obj, key):
+            if isinstance(obj, dict):
+                return obj.get(key)
+            return getattr(obj, key, None)
+
+        b64 = _get(item, "b64_json") or _get(item, "b64")
+        url = _get(item, "url")
+
+        if b64:
+            # sometimes b64 may already be bytes (less common), handle both
+            if isinstance(b64, (bytes, bytearray)):
+                images.append(bytes(b64))
+            else:
+                images.append(base64.b64decode(b64))
+        elif url:
+            r = requests.get(url)
+            r.raise_for_status()
+            images.append(r.content)
+        else:
+            # As a final fallback, try to interpret the item itself as base64-encodable string
+            try:
+                raw = str(item)
+                images.append(base64.b64decode(raw))
+            except Exception:
+                raise RuntimeError("No image data returned from OpenAI (unexpected response shape).")
+    return images
+
+
 api_key = os.getenv("API_KEY")
 stored_password_hash = os.getenv("PASSWORD")
 DRIVE_API_KEY = os.getenv("GOOGLE")
@@ -64,6 +120,7 @@ if user_password_hash == stored_password_hash:
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
     deepseek_key = os.getenv("DEEPSEEK_KEY")
     MODELS = {
+        "GPT5": "openai/gpt-5",
         "GPT4o": "openai/gpt-4o",
         "GPT4.1": "openai/gpt-4.1",
         "GPT4omini": "openai/gpt-4o-mini",
@@ -134,6 +191,24 @@ if user_password_hash == stored_password_hash:
                 options=models,
                 key="model",
             )
+            # Temperature slider for model responses (set per-session in sidebar)
+            # Default heuristic: models starting with "o" use higher default temperature
+            default_temp = 1.0 if (st.session_state.get("model") and str(st.session_state.get("model")).startswith("o")) else 0.5
+            st.slider(
+                "Temperature",
+                min_value=0.0,
+                max_value=1.0,
+                value=default_temp,
+                step=0.01,
+                key="temperature",
+                help="Controls randomness of model responses (0.0 - deterministic, 1.0 - creative)",
+            )
+            # Sidebar toggle to show/hide image generation UI in the main area
+            st.checkbox(
+                "Enable Image Generation",
+                value=st.session_state.get("show_image_ui", False),
+                key="show_image_ui",
+            )
             cols0 = st.columns(2)
             with cols0[1]:
                 st.button(
@@ -198,13 +273,64 @@ if user_password_hash == stored_password_hash:
         model_provider = MODELS[st.session_state.model].split("/")[0]
         if model_provider == "openai":
             model_name = MODELS[st.session_state.model].split("/")[-1]
-            temperature_value = 1 if model_name.startswith("o") else 0.5
+            # Use temperature from sidebar slider if present; otherwise fall back to model heuristic
+            temperature_value = st.session_state.get("temperature", 1.0 if model_name.startswith("o") else 0.5)
             llm_stream = ChatOpenAI(
                 api_key=openai_key,
                 model_name=model_name,
                 temperature=temperature_value,
                 streaming=True,
             )
+
+        # Image generation UI for OpenAI (separate from chat)
+        if api_provider == "OpenAI" and openai_key and "sk-" in openai_key:
+            # Only show image UI when the sidebar toggle is enabled.
+            if st.session_state.get("show_image_ui", False):
+                st.divider()
+                st.subheader("🖼️ Image generation (OpenAI)")
+                img_prompt = st.text_input(
+                    "Image prompt",
+                    value="",
+                    placeholder="Describe the image you want",
+                    key="img_prompt",
+                )
+                size = st.selectbox(
+                    "Size",
+                    ["1024*1536", "1536*1024", "1024x1024", "auto"],
+                    index=2,
+                    key="img_size",
+                )
+                n_images = st.slider("Number of images", 1, 4, 1, key="img_n")
+                if st.button("Generate image", key="generate_image_btn"):
+                    if not img_prompt.strip():
+                        st.warning("Enter an image prompt first.")
+                    else:
+                        with st.spinner("Generating image..."):
+                            try:
+                                imgs = generate_image_bytes(openai_key, img_prompt, size=size, n=n_images)
+                                # Save generated images in session_state so they can be cleared when toggled off
+                                st.session_state.generated_images = imgs
+                            except Exception as e:
+                                st.error(f"Image generation failed: {e}")
+                # Display generated images when the UI is enabled
+                if st.session_state.get("generated_images"):
+                    for i, img_bytes in enumerate(st.session_state.generated_images):
+                        st.image(
+                            img_bytes,
+                            caption=f"Generated image #{i + 1}",
+                            use_column_width=True,
+                        )
+                        st.download_button(
+                            f"Download image #{i + 1}",
+                            data=img_bytes,
+                            file_name=f"image_{i + 1}.png",
+                            mime="image/png",
+                        )
+            else:
+                # When the image UI is disabled, clear any previously generated images and rerun to refresh the UI
+                if st.session_state.get("generated_images"):
+                    del st.session_state["generated_images"]
+                    st.experimental_rerun()
         elif model_provider == "anthropic":
             llm_stream = ChatAnthropic(
                 api_key=anthropic_key,

@@ -5,7 +5,7 @@ description = "Streamlit-based mini RAG bot that pulls data from Google Drive or
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "streamlit==1.38.0",
+    "streamlit==1.46.0",
     "langchain==0.3.0",
     "langchain-anthropic==0.2.1",
     "langchain-chroma==0.1.4",
